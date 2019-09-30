@@ -31,6 +31,7 @@ rule mutect2_sample_pon:
     stderr="log/{germline}.mutect2.pon.stderr"
   shell:
     "{config[module_java]} && "
+    "mkdir -p pon_db && "
     "tools/gatk-4.1.2.0/gatk Mutect2 -R {input.reference} -I {input.bam} -O {output} --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter --max-mnp-distance 0 2>{log.stderr}"
 
 # Create a GenomicsDB from the normal Mutect2 calls
