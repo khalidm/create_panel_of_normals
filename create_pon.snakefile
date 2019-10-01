@@ -1,7 +1,7 @@
 
 VERSION="0.1"
 
-configfile: "cfg/config.yaml"
+configfile: "cfg/config_pon.yaml"
 cluster = json.load(open("cfg/cluster.json"))
 
 # NOTE: no mitochondria MT because they aren't in our exome
