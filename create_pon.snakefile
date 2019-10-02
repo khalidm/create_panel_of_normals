@@ -18,6 +18,8 @@ def germline_sample(wildcards):
 ### final outputs ###
 rule all:
   input:
+    expand("pon_db/{sample}.mutect2.pon.vcf.gz", sample=config['samples']),
+    expand("pon_db/{chromosome}", chromosome=GATK_CHROMOSOMES),
     expand("pon_db/mutect2.pon.{chromosome}.vcf.gz", chromosome=GATK_CHROMOSOMES),
 
 rule mutect2_sample_pon:
@@ -34,7 +36,6 @@ rule mutect2_sample_pon:
     "mkdir -p pon_db && "
     "tools/gatk-4.1.2.0/gatk Mutect2 -R {input.reference} -I {input.bam} -O {output} --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter --max-mnp-distance 0 2>{log.stderr}"
 
-# Create a GenomicsDB from the normal Mutect2 calls
 rule mutect2_GenomicsDBImport:
   input:
     reference=config["genome"],
@@ -50,16 +51,19 @@ rule mutect2_GenomicsDBImport:
   shell:
     "{config[module_java]} && "
     "tools/gatk-4.1.2.0/gatk --java-options '-Xmx12g -Xms12g' GenomicsDBImport -R {input.reference} -L {wildcards.chromosome} --reader-threads {params.cores} --genomicsdb-workspace-path {output} {params.vcfs} 2>{log.stderr}"
+    #"touch {output[1]}"
 
 # Create a pon VCF per chromosome
-rule mutect2_GenomicsDBImport_vcf:
+rule mutect2_CreateSomaticPanelOfNormals:
   input:
     reference=config["genome"],
-    pon_db="pon_db/{chromosome}",
+    pon_db="out/pon_db/{chromosome}",
+    #regions=config["regions"],
+    #vcfs=expand("out/{germline}.mutect2.pon.vcf.gz", germline=germline_samples()),
   output:
-    "pon_db/mutect2.pon.{chromosome}.vcf.gz"
+    "tmp/mutect2.pon.{chromosome}.vcf.gz"
   params:
-    vcfs=' '.join(['-V {}'.format(vcf) for vcf in expand("pon_db/{germline}.mutect2.pon.vcf.gz", germline=germline_samples())]),
+    vcfs=' '.join(['-V {}'.format(vcf) for vcf in expand("out/{germline}.mutect2.pon.vcf.gz", germline=germline_samples())]),
     cores=cluster["mutect2_GenomicsDBImport"]["n"]
   log:
     stderr="log/mutect2.gdb.vcf.{chromosome}.stderr"
